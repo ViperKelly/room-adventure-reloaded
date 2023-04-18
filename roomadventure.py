@@ -105,9 +105,12 @@ class Game(Frame):
 
         # add grabs to the rooms
         r1.add_grabs("key")
+        r1.add_grabs("femur")
         r2.add_grabs("fire")
-        r3.add_grabs("doug")
+        r2.add_grabs("knife")
+        r3.add_grabs("Stretch_Armstrong")
         r4.add_grabs("butter")
+        r4.add_grabs("margarine")
 
         # set the current room to the starting room
         self.current_room = r1
@@ -148,7 +151,7 @@ class Game(Frame):
         if self.current_room == None:
             self.text.insert(END, Game.STATUS_DEAD)
         else:
-            content = f"{self.current_room}\nYou are carrying: {self.inventory}\n\n{status}"
+            content = f"{self.current_room}\nYou are carrying: {self.inventory}\nThings that stick out: {self.current_room.grabs}\n\n{status}"
             self.text.insert(END, content)
 
         self.text.config(state=DISABLED)  # no longer editable
