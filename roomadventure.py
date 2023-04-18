@@ -3,6 +3,8 @@
 # Description: Room Adventure Revolutions
 
 from tkinter import *
+from random import randint
+
 
 
 class Room:
@@ -44,6 +46,7 @@ class Room:
         result += "\n"
 
         return result
+
 
 
 class Game(Frame):
@@ -143,7 +146,6 @@ class Game(Frame):
     def set_status(self, status):
         self.text.config(state=NORMAL)  # make it editable
         self.text.delete(1.0, END)  # yes 1.0 not 0 for Entry elements
-
         if self.current_room == None:
             self.text.insert(END, Game.STATUS_DEAD)
         else:
@@ -189,6 +191,21 @@ class Game(Frame):
         self.set_room_image()
         self.set_status("")
 
+    #function that checks if you have dropped some items!(you are missing fingers
+    def dropped(self, inventory):
+
+        if len(inventory) >=2:
+            num = randint(1,5)
+
+            if num == 3:
+                num2 = randint(0, (len(inventory)-1))
+                print(num2)
+                status = (f"Welp, your missing fingers didn't help you there. You dropped your {self.inventory[num2]}")
+                self.current_room.add_grabs(self.inventory[num2])
+                self.inventory.remove(self.inventory[num2])
+                self.set_status(status)
+
+
     def process(self, event):
         action = self.player_input.get()
         action = action.lower()
@@ -218,6 +235,11 @@ class Game(Frame):
                 self.handle_look(item=noun)
             case "take":
                 self.handle_take(grabbable=noun)
+
+        self.dropped(self.inventory)
+        print(self.current_room.grabs)
+
+
 
 
 # Main
