@@ -76,6 +76,9 @@ class Game(Frame):
         r3 = Room("Room 3", "room3.gif")
         r4 = Room("Room 4", "room4.gif")
 
+        r5 = Room("Room 5", "room5.gif")
+        r6 = Room("Room 6", "room6.gif")
+
         # add exits to the rooms
         r1.add_exit("east", r2)
         r1.add_exit("south", r3)
@@ -85,10 +88,16 @@ class Game(Frame):
 
         r3.add_exit("north", r1)
         r3.add_exit("east", r4)
+        r3.add_exit("south", r6)
 
         r4.add_exit("north", r2)
         r4.add_exit("west", r3)
         r4.add_exit("south", None)  # None means death
+        r4.add_exit("east", r5)
+
+        r5.add_exit("west", r4)
+
+        r6.add_exit("north", r3)
 
         # add items to the rooms
         r1.add_item("chair", "Something about wicker and legs")
@@ -103,6 +112,10 @@ class Game(Frame):
 
         r4.add_item("croissant", "It is made of butter. No flour.")
 
+        r5.add_item("statue", "A statue of Gabe Newell")
+
+        r6.add_item("toybox", "Inside is a limited edition 2011 Bionicle")
+
         # add grabs to the rooms
         r1.add_grabs("key")
         r1.add_grabs("femur")
@@ -111,6 +124,9 @@ class Game(Frame):
         r3.add_grabs("Stretch_Armstrong")
         r4.add_grabs("butter")
         r4.add_grabs("margarine")
+
+        r5.add_grabs("snail")
+        r6.add_grabs("raisin")
 
         # set the current room to the starting room
         self.current_room = r1
