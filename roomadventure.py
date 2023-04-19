@@ -5,6 +5,7 @@
 from tkinter import *
 from random import randint
 
+locked = True
 
 class Room:
     """A Room has a name and a filepath that points to a .gif image"""
@@ -21,7 +22,7 @@ class Room:
 
     def add_item(self, label: str, desc: str):
         self.items[label] = desc
-
+        
     def add_grabs(self, label: str):
         self.grabs.append(label)
 
@@ -79,6 +80,8 @@ class Game(Frame):
         r5 = Room("Room 5", "room5.gif")
         r6 = Room("Room 6", "room6.gif")
 
+        r7 = Room("the outside world", "forest.png")
+
         # add exits to the rooms
         r1.add_exit("east", r2)
         r1.add_exit("south", r3)
@@ -99,6 +102,8 @@ class Game(Frame):
 
         r6.add_exit("north", r3)
 
+        r5.add_exit("east", r7)
+
         # add items to the rooms
         r1.add_item("chair", "Something about wicker and legs")
         r1.add_item("bigger_chair", "More wicker and more legs")
@@ -113,8 +118,11 @@ class Game(Frame):
         r4.add_item("croissant", "It is made of butter. No flour.")
 
         r5.add_item("statue", "A statue of Gabe Newell")
+        r5.add_item("door", "A locked door. Maybe there's a key around here somewhere")
 
         r6.add_item("toybox", "Inside is a limited edition 2011 Bionicle")
+
+        r7.add_item("forest", "A forest. You are finally free.")
 
         # add grabs to the rooms
         r1.add_grabs("key")
@@ -166,6 +174,7 @@ class Game(Frame):
         self.text.delete(1.0, END)  # yes 1.0 not 0 for Entry elements
         if self.current_room == None:
             self.text.insert(END, Game.STATUS_DEAD)
+
         else:
             content = f"{self.current_room}\nYou are carrying: {self.inventory}\nThings that stick out: {self.current_room.grabs}\n\n{status}"
             self.text.insert(END, content)
@@ -179,11 +188,23 @@ class Game(Frame):
         status = Game.STATUS_BAD_EXIT
 
         if destination in self.current_room.exits:
-            self.current_room = self.current_room.exits[destination]
-            status = Game.STATUS_ROOM_CHANGE
-
-        self.set_status(status)
-        self.set_room_image()
+            # check if player is in room 5. If so, checks if the east door is locked before switching rooms.
+            if ((destination == "east") & (locked == False) & (self.current_room.name == "Room 5")):
+                status = "You have escaped into the forest and won the game. Thanks for playing"
+                self.current_room = self.current_room.exits[destination]
+                self.set_room_image()
+            elif((self.current_room.name == "Room 5") & (destination != "east")):
+                self.current_room = self.current_room.exits[destination]
+                status = Game.STATUS_ROOM_CHANGE
+                self.set_room_image()
+            elif self.current_room.name != "Room 5":
+                self.current_room = self.current_room.exits[destination]
+                status = Game.STATUS_ROOM_CHANGE
+                self.set_room_image()
+            else:
+                status = "The door is locked, maybe I can find a key"
+            self.set_status(status)
+        
 
     def handle_look(self, item):
         status = Game.STATUS_BAD_ITEM
@@ -194,12 +215,18 @@ class Game(Frame):
         self.set_status(status)
 
     def handle_take(self, grabbable):
+        global locked
+        
         status = Game.STATUS_BAD_GRABS
 
         if grabbable in self.current_room.grabs:
+
+            if grabbable == "key":
+                locked = False
             self.inventory.append(grabbable)
             self.current_room.del_grabs(grabbable)
             status = Game.STATUS_GRABBED
+            
 
         self.set_status(status)
 
@@ -208,7 +235,7 @@ class Game(Frame):
         self.setup_gui()
         self.set_room_image()
         self.set_status("")
-
+        
     #function that checks if you have dropped some items!(you are missing fingers
     def dropped(self, inventory):
 
@@ -222,7 +249,6 @@ class Game(Frame):
                 self.current_room.add_grabs(self.inventory[num2])
                 self.inventory.remove(self.inventory[num2])
                 self.set_status(status)
-
 
     def process(self, event):
         action = self.player_input.get()
