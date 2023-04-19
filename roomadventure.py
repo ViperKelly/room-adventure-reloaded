@@ -15,6 +15,7 @@ class Room:
         self.exits = {}
         self.items = {}
         self.grabs = []
+        self.breads = {}
 
     def add_exit(self, label: str, room: 'Room'):
         self.exits[label] = room
@@ -27,6 +28,10 @@ class Room:
 
     def del_grabs(self, label: str):
         self.grabs.remove(label)
+
+    def add_breads(self, label: str, points: int):
+        self.breads[label] = points
+        self.grabs.append(label)
 
     def __str__(self) -> str:
         # Create the base response
@@ -45,7 +50,6 @@ class Room:
         result += "\n"
 
         return result
-
 
 
 class Game(Frame):
@@ -128,6 +132,20 @@ class Game(Frame):
         r5.add_grabs("snail")
         r6.add_grabs("raisin")
 
+        # add breads
+        r1.add_breads("Bagel 1", randint(100, 250))
+        r1.add_breads("White", 50)
+        r2.add_breads("Bagel 2", randint(100, 250))
+        r2.add_breads("Baguette", 150)
+        r3.add_breads("Bagel 3", randint(100, 250))
+        r3.add_breads("Croissant", 225)
+        r4.add_breads("WholeWheat", 150)
+        r4.add_breads("Pumpernickel", 500)
+        r5.add_breads("Cornbread", 350)
+        r5.add_breads("Brioche", 275)
+        r6.add_breads("Ciabatta", 175)
+        r6.add_breads("Sourdough", 190)
+
         # set the current room to the starting room
         self.current_room = r1
 
@@ -138,10 +156,10 @@ class Game(Frame):
         self.player_input.focus()
 
         # the image container and default image
-        img = None  # represents the acutal image
+        img = None  # represents the actual image
         self.image_container = Label(self, width=Game.WIDTH // 2, image=img)
         self.image_container.pack(side=LEFT, fill=Y)
-        self.image_container.image = img  # ensuring image persistance after function ends
+        self.image_container.image = img  # ensuring image persistence after function ends
         # prevent the image from modifying the size of the container it is in
         self.image_container.pack_propagate(False)
 
@@ -153,7 +171,7 @@ class Game(Frame):
         text_container.pack_propagate(False)
 
     def set_room_image(self):
-        if self.current_room == None:
+        if self.current_room is None:
             img = PhotoImage(file="skull.gif")
         else:
             img = PhotoImage(file=self.current_room.image)
@@ -164,7 +182,7 @@ class Game(Frame):
     def set_status(self, status):
         self.text.config(state=NORMAL)  # make it editable
         self.text.delete(1.0, END)  # yes 1.0 not 0 for Entry elements
-        if self.current_room == None:
+        if self.current_room is None:
             self.text.insert(END, Game.STATUS_DEAD)
         else:
             content = f"{self.current_room}\nYou are carrying: {self.inventory}\nThings that stick out: {self.current_room.grabs}\n\n{status}"
@@ -209,20 +227,19 @@ class Game(Frame):
         self.set_room_image()
         self.set_status("")
 
-    #function that checks if you have dropped some items!(you are missing fingers
+    # function that checks if you have dropped some items!(you are missing fingers
     def dropped(self, inventory):
 
-        if len(inventory) >=2:
-            num = randint(1,5)
+        if len(inventory) >= 2:
+            num = randint(1, 5)
 
             if num == 3:
-                num2 = randint(0, (len(inventory)-1))
+                num2 = randint(0, (len(inventory) - 1))
                 print(num2)
-                status = (f"Welp, your missing fingers didn't help you there. You dropped your {self.inventory[num2]}")
+                status = f"Welp, your missing fingers didn't help you there. You dropped your {self.inventory[num2]}"
                 self.current_room.add_grabs(self.inventory[num2])
                 self.inventory.remove(self.inventory[num2])
                 self.set_status(status)
-
 
     def process(self, event):
         action = self.player_input.get()
@@ -231,7 +248,7 @@ class Game(Frame):
         if action in Game.EXIT_ACTIONS:
             exit()
 
-        if self.current_room == None:
+        if self.current_room is None:
             self.clear_entry()
             return
 
@@ -256,8 +273,6 @@ class Game(Frame):
 
         self.dropped(self.inventory)
         print(self.current_room.grabs)
-
-
 
 
 # Main
