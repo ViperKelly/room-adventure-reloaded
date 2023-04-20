@@ -3,7 +3,10 @@
 # Description: Room Adventure Revolutions
 
 from tkinter import *
-from random import randint
+from random import randint, choice
+import time
+
+breads = {}  # Creates Bread dictionary to access breads as a point system
 
 
 class Room:
@@ -15,7 +18,6 @@ class Room:
         self.exits = {}
         self.items = {}
         self.grabs = []
-        self.breads = {}
 
     def add_exit(self, label: str, room: 'Room'):
         self.exits[label] = room
@@ -29,9 +31,10 @@ class Room:
     def del_grabs(self, label: str):
         self.grabs.remove(label)
 
+    # adds bread to the bread dictionary and to the grabs list by the add_grabs function
     def add_breads(self, label: str, points: int):
-        self.breads[label] = points
-        self.grabs.append(label)
+        breads[label] = points
+        self.add_grabs(label)
 
     def __str__(self) -> str:
         # Create the base response
@@ -52,36 +55,41 @@ class Room:
         return result
 
 
-class Game(Frame):
+class Game(Frame, Room):
     EXIT_ACTIONS = ["quit", "exit", "bye", "q"]
 
     # Statuses
-    STATUS_DEFAULT = "I don't understand. Try [veb] [noun]. Valid bers are go, look, take."
+    STATUS_DEFAULT = "I don't understand. Try [veb] [noun]. Valid bers are go, look, take, eat."
     STATUS_DEAD = "You are dead."
     STATUS_BAD_EXIT = "Invalid Exit."
     STATUS_ROOM_CHANGE = "Room Changed"
     STATUS_GRABBED = "Item Grabbed"
     STATUS_BAD_GRABS = "I can't grab that."
     STATUS_BAD_ITEM = "I don't see that."
+    STATUS_BAD_EAT = "Why would you eat that"
+    STATUS_GOOD_EAT = "I LOVE BREAD!!!"
+    STATUS_TIME_UP = "Your Time is Up"
 
     WIDTH = 800
     HEIGHT = 600
 
     def __init__(self, parent):
         self.inventory = []
+        self.points: int = 0
         Frame.__init__(self, parent)
         self.pack(fill=BOTH, expand=1)
 
     def setup_game(self):
 
+        self.rooms = []
         # create rooms
         r1 = Room("Room 1", "room1.gif")
         r2 = Room("Room 2", "room2.gif")
         r3 = Room("Room 3", "room3.gif")
         r4 = Room("Room 4", "room4.gif")
-
         r5 = Room("Room 5", "room5.gif")
         r6 = Room("Room 6", "room6.gif")
+        self.rooms = [r1, r2, r3, r4, r5, r6]  # append list when new room created
 
         # add exits to the rooms
         r1.add_exit("east", r2)
@@ -132,22 +140,23 @@ class Game(Frame):
         r5.add_grabs("snail")
         r6.add_grabs("raisin")
 
-        # add breads
-        r1.add_breads("Bagel 1", randint(100, 250))
-        r1.add_breads("White", 50)
-        r2.add_breads("Bagel 2", randint(100, 250))
-        r2.add_breads("Baguette", 150)
-        r3.add_breads("Bagel 3", randint(100, 250))
-        r3.add_breads("Croissant", 225)
-        r4.add_breads("WholeWheat", 150)
-        r4.add_breads("Pumpernickel", 500)
-        r5.add_breads("Cornbread", 350)
-        r5.add_breads("Brioche", 275)
-        r6.add_breads("Ciabatta", 175)
-        r6.add_breads("Sourdough", 190)
+        # add breads to rooms
+        r1.add_breads("bagel1", randint(100, 250))
+        r1.add_breads("white", 50)
+        r2.add_breads("bagel2", randint(100, 250))
+        r2.add_breads("baguette", 150)
+        r3.add_breads("bagel3", randint(100, 250))
+        r3.add_breads("croissant", 225)
+        r4.add_breads("wholewheat", 150)
+        r4.add_breads("pumpernickel", 500)
+        r5.add_breads("cornbread", 350)
+        r5.add_breads("brioche", 275)
+        r6.add_breads("ciabatta", 175)
+        r6.add_breads("sourdough", 190)
 
         # set the current room to the starting room
         self.current_room = r1
+
 
     def setup_gui(self):
         self.player_input = Entry(self, bg="white", fg="black")
@@ -185,7 +194,7 @@ class Game(Frame):
         if self.current_room is None:
             self.text.insert(END, Game.STATUS_DEAD)
         else:
-            content = f"{self.current_room}\nYou are carrying: {self.inventory}\nThings that stick out: {self.current_room.grabs}\n\n{status}"
+            content = f"{self.current_room}\nYou are carrying: {self.inventory}\nThings that stick out: {self.current_room.grabs}\nYour Score: {self.points}\n\n{status}"
             self.text.insert(END, content)
 
         self.text.config(state=DISABLED)  # no longer editable
@@ -219,6 +228,26 @@ class Game(Frame):
             self.current_room.del_grabs(grabbable)
             status = Game.STATUS_GRABBED
 
+        self.set_status(status)
+
+    # EAT Grabbables (please eat bread): adds a point system based on what you eat
+    def handle_eat(self, grabbable):
+        status = None
+
+        if grabbable in self.inventory:
+            # makes sure item is a bread
+            if grabbable in breads:
+                self.points += breads[grabbable] # thank goodness you eat bread here is points
+                self.random_room = choice(self.rooms)
+                self.inventory.remove(grabbable)
+                self.random_room.add_grabs(grabbable)
+                status = Game.STATUS_GOOD_EAT
+            else:
+                self.points -= 250  # why did you eat that give me the points back
+                self.random_room = choice(self.rooms)
+                self.inventory.remove(grabbable)
+                self.random_room.add_grabs(grabbable)
+                status = Game.STATUS_BAD_EAT
         self.set_status(status)
 
     def play(self):
@@ -270,6 +299,8 @@ class Game(Frame):
                 self.handle_look(item=noun)
             case "take":
                 self.handle_take(grabbable=noun)
+            case "eat":
+                self.handle_eat(grabbable=noun)
 
         self.dropped(self.inventory)
         print(self.current_room.grabs)
