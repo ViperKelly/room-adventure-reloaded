@@ -268,6 +268,7 @@ class Game(Frame, Room):
                 status = f"Welp, your missing fingers didn't help you there. You dropped your {self.inventory[num2]}"
                 self.current_room.add_grabs(self.inventory[num2])
                 self.inventory.remove(self.inventory[num2])
+                self.points -= 100
                 self.set_status(status)
 
     def process(self, event):
