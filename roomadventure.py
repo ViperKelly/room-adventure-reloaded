@@ -6,6 +6,7 @@ from tkinter import *
 from random import randint
 
 locked = True
+won = False
 
 class Room:
     """A Room has a name and a filepath that points to a .gif image"""
@@ -170,10 +171,15 @@ class Game(Frame):
         self.image_container.image = img
 
     def set_status(self, status):
+        global won
         self.text.config(state=NORMAL)  # make it editable
         self.text.delete(1.0, END)  # yes 1.0 not 0 for Entry elements
         if self.current_room == None:
             self.text.insert(END, Game.STATUS_DEAD)
+
+        elif won == True:
+            content = f"You have escaped into the forest and beat the\ngame. Thanks for playing."
+            self.text.insert(END, content)
 
         else:
             content = f"{self.current_room}\nYou are carrying: {self.inventory}\nThings that stick out: {self.current_room.grabs}\n\n{status}"
@@ -185,11 +191,13 @@ class Game(Frame):
         self.player_input.delete(0, END)
 
     def handle_go(self, destination):
+        global won
         status = Game.STATUS_BAD_EXIT
 
         if destination in self.current_room.exits:
             # check if player is in room 5. If so, checks if the east door is locked before switching rooms.
             if ((destination == "east") & (locked == False) & (self.current_room.name == "Room 5")):
+                won = True
                 status = "You have escaped into the forest and won the game. Thanks for playing"
                 self.current_room = self.current_room.exits[destination]
                 self.set_room_image()
