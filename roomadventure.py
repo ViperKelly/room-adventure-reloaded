@@ -3,7 +3,10 @@
 # Description: Room Adventure Revolutions
 
 from tkinter import *
-from random import randint
+from random import randint, choice
+import time
+
+breads = {}  # Creates Bread dictionary to access breads as a point system
 
 locked = True
 won = False
@@ -30,6 +33,11 @@ class Room:
     def del_grabs(self, label: str):
         self.grabs.remove(label)
 
+    # adds bread to the bread dictionary and to the grabs list by the add_grabs function
+    def add_breads(self, label: str, points: int):
+        breads[label] = points
+        self.add_grabs(label)
+
     def __str__(self) -> str:
         # Create the base response
         result = f"You are in {self.name}\n"
@@ -49,37 +57,41 @@ class Room:
         return result
 
 
-
-class Game(Frame):
+class Game(Frame, Room):
     EXIT_ACTIONS = ["quit", "exit", "bye", "q"]
 
     # Statuses
-    STATUS_DEFAULT = "I don't understand. Try [veb] [noun]. Valid bers are go, look, take."
+    STATUS_DEFAULT = "I don't understand. Try [veb] [noun]. Valid bers are go, look, take, eat."
     STATUS_DEAD = "You are dead."
     STATUS_BAD_EXIT = "Invalid Exit."
     STATUS_ROOM_CHANGE = "Room Changed"
     STATUS_GRABBED = "Item Grabbed"
     STATUS_BAD_GRABS = "I can't grab that."
     STATUS_BAD_ITEM = "I don't see that."
+    STATUS_BAD_EAT = "Why would you eat that"
+    STATUS_GOOD_EAT = "I LOVE BREAD!!!"
+    STATUS_TIME_UP = "Your Time is Up"
 
     WIDTH = 800
     HEIGHT = 600
 
     def __init__(self, parent):
         self.inventory = []
+        self.points: int = 0
         Frame.__init__(self, parent)
         self.pack(fill=BOTH, expand=1)
 
     def setup_game(self):
 
+        self.rooms = []
         # create rooms
         r1 = Room("Room 1", "room1.gif")
         r2 = Room("Room 2", "room2.gif")
         r3 = Room("Room 3", "room3.gif")
         r4 = Room("Room 4", "room4.gif")
-
         r5 = Room("Room 5", "room5.gif")
         r6 = Room("Room 6", "room6.gif")
+        self.rooms = [r1, r2, r3, r4, r5, r6]  # append list when new room created
 
         r7 = Room("the outside world", "forest.png")
 
@@ -137,8 +149,23 @@ class Game(Frame):
         r5.add_grabs("snail")
         r6.add_grabs("raisin")
 
+        # add breads to rooms
+        r1.add_breads("bagel1", randint(100, 250))
+        r1.add_breads("white", 50)
+        r2.add_breads("bagel2", randint(100, 250))
+        r2.add_breads("baguette", 150)
+        r3.add_breads("bagel3", randint(100, 250))
+        r3.add_breads("croissant", 225)
+        r4.add_breads("wholewheat", 150)
+        r4.add_breads("pumpernickel", 500)
+        r5.add_breads("cornbread", 350)
+        r5.add_breads("brioche", 275)
+        r6.add_breads("ciabatta", 175)
+        r6.add_breads("sourdough", 190)
+
         # set the current room to the starting room
         self.current_room = r1
+
 
     def setup_gui(self):
         self.player_input = Entry(self, bg="white", fg="black")
@@ -147,10 +174,10 @@ class Game(Frame):
         self.player_input.focus()
 
         # the image container and default image
-        img = None  # represents the acutal image
+        img = None  # represents the actual image
         self.image_container = Label(self, width=Game.WIDTH // 2, image=img)
         self.image_container.pack(side=LEFT, fill=Y)
-        self.image_container.image = img  # ensuring image persistance after function ends
+        self.image_container.image = img  # ensuring image persistence after function ends
         # prevent the image from modifying the size of the container it is in
         self.image_container.pack_propagate(False)
 
@@ -162,7 +189,7 @@ class Game(Frame):
         text_container.pack_propagate(False)
 
     def set_room_image(self):
-        if self.current_room == None:
+        if self.current_room is None:
             img = PhotoImage(file="skull.gif")
         else:
             img = PhotoImage(file=self.current_room.image)
@@ -174,7 +201,7 @@ class Game(Frame):
         global won
         self.text.config(state=NORMAL)  # make it editable
         self.text.delete(1.0, END)  # yes 1.0 not 0 for Entry elements
-        if self.current_room == None:
+        if self.current_room is None:
             self.text.insert(END, Game.STATUS_DEAD)
 
         elif won == True:
@@ -182,7 +209,7 @@ class Game(Frame):
             self.text.insert(END, content)
 
         else:
-            content = f"{self.current_room}\nYou are carrying: {self.inventory}\nThings that stick out: {self.current_room.grabs}\n\n{status}"
+            content = f"{self.current_room}\nYou are carrying: {self.inventory}\nThings that stick out: {self.current_room.grabs}\nYour Score: {self.points}\n\n{status}"
             self.text.insert(END, content)
 
         self.text.config(state=DISABLED)  # no longer editable
@@ -238,24 +265,46 @@ class Game(Frame):
 
         self.set_status(status)
 
+    # EAT Grabbables (please eat bread): adds a point system based on what you eat
+    def handle_eat(self, grabbable):
+        status = None
+
+        if grabbable in self.inventory:
+            # makes sure item is a bread
+            if grabbable in breads:
+                self.points += breads[grabbable] # thank goodness you eat bread here is points
+                self.random_room = choice(self.rooms)
+                self.inventory.remove(grabbable)
+                self.random_room.add_grabs(grabbable)
+                status = Game.STATUS_GOOD_EAT
+            else:
+                self.points -= 250  # why did you eat that give me the points back
+                self.random_room = choice(self.rooms)
+                self.inventory.remove(grabbable)
+                self.random_room.add_grabs(grabbable)
+                status = Game.STATUS_BAD_EAT
+        self.set_status(status)
+
     def play(self):
         self.setup_game()
         self.setup_gui()
         self.set_room_image()
         self.set_status("")
-        
-    #function that checks if you have dropped some items!(you are missing fingers
+
+
+    # function that checks if you have dropped some items!(you are missing fingers
     def dropped(self, inventory):
 
-        if len(inventory) >=2:
-            num = randint(1,5)
+        if len(inventory) >= 2:
+            num = randint(1, 5)
 
             if num == 3:
-                num2 = randint(0, (len(inventory)-1))
+                num2 = randint(0, (len(inventory) - 1))
                 print(num2)
-                status = (f"Welp, your missing fingers didn't help you there. You dropped your {self.inventory[num2]}")
+                status = f"Welp, your missing fingers didn't help you there. You dropped your {self.inventory[num2]}"
                 self.current_room.add_grabs(self.inventory[num2])
                 self.inventory.remove(self.inventory[num2])
+                self.points -= 100
                 self.set_status(status)
 
     def process(self, event):
@@ -265,7 +314,7 @@ class Game(Frame):
         if action in Game.EXIT_ACTIONS:
             exit()
 
-        if self.current_room == None:
+        if self.current_room is None:
             self.clear_entry()
             return
 
@@ -287,11 +336,11 @@ class Game(Frame):
                 self.handle_look(item=noun)
             case "take":
                 self.handle_take(grabbable=noun)
+            case "eat":
+                self.handle_eat(grabbable=noun)
 
         self.dropped(self.inventory)
         print(self.current_room.grabs)
-
-
 
 
 # Main
